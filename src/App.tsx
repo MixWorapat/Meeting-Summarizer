@@ -385,14 +385,6 @@ ${editedDetails.agenda.map(a => `- ${a}`).join('\n')}
                     {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
                     {copied ? 'คัดลอกแล้ว' : 'คัดลอกสรุป'}
                   </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleReset}
-                    className="flex-1 md:flex-none px-3 py-1.5 bg-gray-900 text-white rounded-lg text-[10px] font-bold hover:bg-gray-800 transition-all shadow-md flex items-center justify-center gap-1.5"
-                  >
-                    <Plus className="w-3 h-3" />
-                    ใหม่
-                  </motion.button>
                 </div>
               </div>
 
