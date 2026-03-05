@@ -1,0 +1,5 @@
+{
+  "name": "Meeting Summarizer",
+  "description": "Extracts meeting details from invitation documents (PDF/Images) and helps schedule them on Google Calendar.",
+  "requestFramePermissions": []
+}
