@@ -125,15 +125,68 @@ ${editedDetails.agenda.map(a => `- ${a}`).join('\n')}
 
   const generateGoogleCalendarUrl = (details: MeetingDetails) => {
     const { topic, date, endDate, startTime, endTime, location, notes, agenda } = details;
+    
     const formatDateTime = (d: string, t: string) => {
-      if (!d || !t) return '';
-      const cleanDate = d.replace(/-/g, '');
-      const cleanTime = t.replace(/:/g, '') + '00';
-      return `${cleanDate}T${cleanTime}`;
+      if (!d) return '';
+      
+      // Extract YYYY-MM-DD
+      const dateMatch = d.match(/(\d{4})-(\d{2})-(\d{2})/);
+      if (!dateMatch) return '';
+      let [_, y, m, day] = dateMatch;
+      
+      // Convert B.E. to A.D. if year is > 2400
+      let yearNum = parseInt(y);
+      if (yearNum > 2400) {
+        y = (yearNum - 543).toString();
+      }
+      
+      // If no time, return just date (All day event format)
+      if (!t || t.includes('รอระบุ')) return `${y}${m}${day}`;
+      
+      // Extract HH:mm
+      const timeMatch = t.match(/(\d{1,2}):(\d{1,2})/);
+      if (!timeMatch) return `${y}${m}${day}`;
+      
+      const h = timeMatch[1].padStart(2, '0');
+      const min = timeMatch[2].padStart(2, '0');
+      
+      return `${y}${m}${day}T${h}${min}00`;
     };
 
     const startDateTime = formatDateTime(date, startTime);
-    const endDateTime = formatDateTime(endDate || date, endTime) || startDateTime;
+    let endDateTime = formatDateTime(endDate || date, endTime);
+    
+    // Fallback if end time is missing or same as start
+    if (!endDateTime || endDateTime === startDateTime) {
+      if (startDateTime.includes('T')) {
+        // Add 1 hour to start time if it's a timed event
+        const timeMatch = startTime.match(/(\d{1,2}):(\d{1,2})/);
+        if (timeMatch) {
+          const nextHour = (parseInt(timeMatch[1]) + 1).toString().padStart(2, '0');
+          const min = timeMatch[2].padStart(2, '0');
+          
+          // Re-extract normalized A.D. date from startDateTime
+          const y = startDateTime.substring(0, 4);
+          const m = startDateTime.substring(4, 6);
+          const d = startDateTime.substring(6, 8);
+          endDateTime = `${y}${m}${d}T${nextHour}${min}00`;
+        }
+      } else {
+        // For all-day events, end date must be the day AFTER the actual end date
+        // We need to parse the date carefully, handling B.E. if necessary
+        let [y, m, day] = (endDate || date).split('-').map(Number);
+        if (y > 2400) y -= 543;
+        
+        const dateObj = new Date(y, m - 1, day);
+        dateObj.setDate(dateObj.getDate() + 1);
+        
+        const resY = dateObj.getFullYear();
+        const resM = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+        const resD = dateObj.getDate().toString().padStart(2, '0');
+        endDateTime = `${resY}${resM}${resD}`;
+      }
+    }
+
     const dates = startDateTime && endDateTime ? `${startDateTime}/${endDateTime}` : '';
     
     let description = notes ? `หมายเหตุ:\n${notes}\n\n` : '';
