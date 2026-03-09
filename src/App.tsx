@@ -86,7 +86,7 @@ export default function App() {
     
     const text = `
 หัวข้อ: ${editedDetails.topic}
-วันที่: ${editedDetails.date}
+วันที่: ${editedDetails.date}${editedDetails.endDate && editedDetails.endDate !== editedDetails.date ? ` - ${editedDetails.endDate}` : ''}
 เวลา: ${editedDetails.startTime} - ${editedDetails.endTime}
 สถานที่/ลิงก์: ${editedDetails.location}
 ผู้เข้าร่วม: ${editedDetails.attendees.join(', ')}
@@ -124,7 +124,7 @@ ${editedDetails.agenda.map(a => `- ${a}`).join('\n')}
   };
 
   const generateGoogleCalendarUrl = (details: MeetingDetails) => {
-    const { topic, date, startTime, endTime, location, notes, agenda } = details;
+    const { topic, date, endDate, startTime, endTime, location, notes, agenda } = details;
     const formatDateTime = (d: string, t: string) => {
       if (!d || !t) return '';
       const cleanDate = d.replace(/-/g, '');
@@ -133,7 +133,7 @@ ${editedDetails.agenda.map(a => `- ${a}`).join('\n')}
     };
 
     const startDateTime = formatDateTime(date, startTime);
-    const endDateTime = formatDateTime(date, endTime) || startDateTime;
+    const endDateTime = formatDateTime(endDate || date, endTime) || startDateTime;
     const dates = startDateTime && endDateTime ? `${startDateTime}/${endDateTime}` : '';
     
     let description = notes ? `หมายเหตุ:\n${notes}\n\n` : '';
@@ -413,14 +413,33 @@ ${editedDetails.agenda.map(a => `- ${a}`).join('\n')}
                       <div className="space-y-0.5 flex-1">
                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">วันที่</p>
                         {isEditing ? (
-                          <input
-                            type="date"
-                            className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-xs font-bold text-gray-900 focus:ring-1 focus:ring-indigo-500 outline-none"
-                            value={editedDetails?.date}
-                            onChange={(e) => updateEditedField('date', e.target.value)}
-                          />
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[8px] text-gray-400 w-6">เริ่ม:</span>
+                              <input
+                                type="date"
+                                className="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-xs font-bold text-gray-900 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                value={editedDetails?.date}
+                                onChange={(e) => updateEditedField('date', e.target.value)}
+                              />
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[8px] text-gray-400 w-6">ถึง:</span>
+                              <input
+                                type="date"
+                                className="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-xs font-bold text-gray-900 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                value={editedDetails?.endDate || editedDetails?.date}
+                                onChange={(e) => updateEditedField('endDate', e.target.value)}
+                              />
+                            </div>
+                          </div>
                         ) : (
-                          <p className="text-xs font-bold text-gray-900">{meetingDetails?.date || 'ไม่ระบุ'}</p>
+                          <p className="text-xs font-bold text-gray-900">
+                            {meetingDetails?.date || 'ไม่ระบุ'}
+                            {meetingDetails?.endDate && meetingDetails.endDate !== meetingDetails.date && (
+                              <span className="ml-1">- {meetingDetails.endDate}</span>
+                            )}
+                          </p>
                         )}
                       </div>
                     </div>

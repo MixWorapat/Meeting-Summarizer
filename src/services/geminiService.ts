@@ -5,6 +5,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 export interface MeetingDetails {
   topic: string;
   date: string;
+  endDate?: string;
   startTime: string;
   endTime: string;
   location: string;
@@ -26,7 +27,8 @@ export async function extractMeetingDetails(
     IMPORTANT: Please provide the extracted information and summaries in Thai language (ภาษาไทย).
     
     - topic: The main topic or title of the meeting.
-    - date: The date of the meeting in YYYY-MM-DD format.
+    - date: The start date of the meeting in YYYY-MM-DD format.
+    - endDate: The end date of the meeting in YYYY-MM-DD format. If it's a single day meeting, this should be the same as 'date' or left empty.
     - startTime: The start time in HH:mm format (24-hour).
     - endTime: The end time in HH:mm format (24-hour). If not specified, estimate 1 hour after start time.
     - location: The physical location, room, or online meeting link (e.g., Zoom, Webex, Google Meet).
@@ -62,7 +64,8 @@ export async function extractMeetingDetails(
         type: Type.OBJECT,
         properties: {
           topic: { type: Type.STRING, description: "Meeting topic or title" },
-          date: { type: Type.STRING, description: "Meeting date in YYYY-MM-DD format" },
+          date: { type: Type.STRING, description: "Meeting start date in YYYY-MM-DD format" },
+          endDate: { type: Type.STRING, description: "Meeting end date in YYYY-MM-DD format (optional)" },
           startTime: { type: Type.STRING, description: "Start time in HH:mm format" },
           endTime: { type: Type.STRING, description: "End time in HH:mm format" },
           location: { type: Type.STRING, description: "Location or meeting link" },
