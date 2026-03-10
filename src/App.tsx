@@ -227,19 +227,46 @@ ${editedDetails.agenda.map(a => `- ${a}`).join('\n')}
   const generateOutlookWebUrl = (details: MeetingDetails) => {
     const { topic, date, endDate, startTime, endTime, location, notes, agenda } = details;
     
-    const formatDateTime = (d: string, t: string) => {
-      if (!d) return '';
+    const parseTime = (t: string, defaultH: number) => {
+      const match = (t || '').match(/(\d{1,2}):(\d{1,2})\s*(AM|PM)?/i);
+      if (!match) return { h: defaultH, m: 0 };
+      let h = parseInt(match[1]);
+      const m = parseInt(match[2]);
+      const ampm = match[3]?.toUpperCase();
+      if (ampm === 'PM' && h < 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      return { h, m };
+    };
+
+    const formatDt = (d: string, timeObj: {h: number, m: number}) => {
       let [y, m, day] = d.split('-').map(Number);
       if (y > 2400) y -= 543;
       
-      const h = (t.match(/(\d{1,2}):/) || [null, '09'])[1]?.padStart(2, '0');
-      const min = (t.match(/:(\d{1,2})/) || [null, '00'])[1]?.padStart(2, '0');
+      // Create a date object in the user's local timezone
+      const localDate = new Date(y, m - 1, day, timeObj.h, timeObj.m, 0);
       
-      return `${y}-${m.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${h}:${min}:00`;
+      // Outlook Web (OWA) often expects UTC time in the URL parameters
+      // We convert the local time to UTC components
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const utcY = localDate.getUTCFullYear();
+      const utcM = pad(localDate.getUTCMonth() + 1);
+      const utcD = pad(localDate.getUTCDate());
+      const utcH = pad(localDate.getUTCHours());
+      const utcMin = pad(localDate.getUTCMinutes());
+      
+      return `${utcY}-${utcM}-${utcD}T${utcH}:${utcMin}:00Z`;
     };
 
-    const startDt = formatDateTime(date, startTime);
-    const endDt = formatDateTime(endDate || date, endTime) || startDt;
+    const start = parseTime(startTime, 9);
+    let end = parseTime(endTime, start.h + 1);
+    
+    // If end time is same or before start, and it's the same day, add 1 hour
+    if (date === (endDate || date) && (end.h < start.h || (end.h === start.h && end.m <= start.m))) {
+      end = { h: (start.h + 1) % 24, m: start.m };
+    }
+
+    const startDt = formatDt(date, start);
+    const endDt = formatDt(endDate || date, end);
 
     let body = notes ? `หมายเหตุ:\n${notes}\n\n` : '';
     if (agenda && agenda.length > 0) {
@@ -261,19 +288,43 @@ ${editedDetails.agenda.map(a => `- ${a}`).join('\n')}
   const downloadIcsFile = (details: MeetingDetails) => {
     const { topic, date, endDate, startTime, endTime, location, notes, agenda } = details;
     
-    const formatIcsDate = (d: string, t: string) => {
-      if (!d) return '';
+    const parseTime = (t: string, defaultH: number) => {
+      const match = (t || '').match(/(\d{1,2}):(\d{1,2})\s*(AM|PM)?/i);
+      if (!match) return { h: defaultH, m: 0 };
+      let h = parseInt(match[1]);
+      const m = parseInt(match[2]);
+      const ampm = match[3]?.toUpperCase();
+      if (ampm === 'PM' && h < 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      return { h, m };
+    };
+
+    const formatIcsDt = (d: string, timeObj: {h: number, m: number}) => {
       let [y, m, day] = d.split('-').map(Number);
       if (y > 2400) y -= 543;
       
-      const h = (t.match(/(\d{1,2}):/) || [null, '09'])[1]?.padStart(2, '0');
-      const min = (t.match(/:(\d{1,2})/) || [null, '00'])[1]?.padStart(2, '0');
+      // For ICS, using UTC (with Z suffix) is the most reliable way to handle timezones
+      const localDate = new Date(y, m - 1, day, timeObj.h, timeObj.m, 0);
+      const pad = (n: number) => n.toString().padStart(2, '0');
       
-      return `${y}${m.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}T${h}${min}00`;
+      const utcY = localDate.getUTCFullYear();
+      const utcM = pad(localDate.getUTCMonth() + 1);
+      const utcD = pad(localDate.getUTCDate());
+      const utcH = pad(localDate.getUTCHours());
+      const utcMin = pad(localDate.getUTCMinutes());
+      
+      return `${utcY}${utcM}${utcD}T${utcH}${utcMin}00Z`;
     };
 
-    const start = formatIcsDate(date, startTime);
-    const end = formatIcsDate(endDate || date, endTime);
+    const start = parseTime(startTime, 9);
+    let end = parseTime(endTime, start.h + 1);
+    
+    if (date === (endDate || date) && (end.h < start.h || (end.h === start.h && end.m <= start.m))) {
+      end = { h: (start.h + 1) % 24, m: start.m };
+    }
+
+    const startStr = formatIcsDt(date, start);
+    const endStr = formatIcsDt(endDate || date, end);
     
     let description = notes ? `หมายเหตุ: ${notes}\\n\\n` : '';
     if (agenda && agenda.length > 0) {
@@ -283,16 +334,25 @@ ${editedDetails.agenda.map(a => `- ${a}`).join('\n')}
     const icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
       'PRODID:-//Meeting Summarizer//EN',
       'BEGIN:VEVENT',
       `SUMMARY:${topic || 'การประชุม'}`,
-      `DTSTART:${start}`,
-      `DTEND:${end || start}`,
+      `DTSTART:${startStr}`,
+      `DTEND:${endStr}`,
       `LOCATION:${location || ''}`,
       `DESCRIPTION:${description}`,
+      'STATUS:CONFIRMED',
+      'SEQUENCE:0',
+      'BEGIN:VALARM',
+      'TRIGGER:-PT15M',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:Reminder',
+      'END:VALARM',
       'END:VEVENT',
       'END:VCALENDAR'
-    ].join('\n');
+    ].join('\r\n');
 
     const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
     const link = document.createElement('a');
