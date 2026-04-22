@@ -13,12 +13,17 @@ const GoogleLogo = () => (
 );
 
 const OutlookLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5">
-    <path fill="#0078d4" d="M1.5 4.5l8.5-2.5v20l-8.5-2.5V4.5z"/>
-    <path fill="#fff" d="M3.5 8.5h4.5v7H3.5V8.5z"/>
-    <path fill="#0078d4" d="M10 2l12.5 2.5v15L10 22V2z"/>
-    <path fill="#fff" d="M12.5 7.5h7.5v9h-7.5V7.5z"/>
-    <path fill="#0078d4" d="M14 9.5h4.5v5H14V9.5z"/>
+  <svg viewBox="0 0 48 48" className="w-5 h-5" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M42 8H16C14.8954 8 14 8.89543 14 10V38C14 39.1046 14.8954 40 16 40H42C43.1046 40 44 39.1046 44 38V10C44 8.89543 43.1046 8 42 8Z" fill="#0078D4"/>
+    <path d="M14 18H44V31C44 32.1046 43.1046 33 42 33H16C14.8954 33 14 32.1046 14 31V18Z" fill="white" fillOpacity="0.2"/>
+    <path d="M14 31H44V38C44 39.1046 43.1046 40 42 40H16C14.8954 40 14 39.1046 14 38V31Z" fill="black" fillOpacity="0.1"/>
+    <path d="M21 16H39V32H21V16Z" fill="white"/>
+    <rect x="24" y="20" width="12" height="1.5" rx="0.75" fill="#0078D4"/>
+    <rect x="24" y="24" width="12" height="1.5" rx="0.75" fill="#0078D4"/>
+    <rect x="24" y="28" width="8" height="1.5" rx="0.75" fill="#0078D4"/>
+    <path d="M4 14L20 10V38L4 34V14Z" fill="#0078D4"/>
+    <circle cx="9" cy="23" r="3" fill="white"/>
+    <circle cx="9" cy="23" r="1.2" fill="#0078D4"/>
   </svg>
 );
 
@@ -274,7 +279,7 @@ ${editedDetails.agenda.map(a => `- ${a}`).join('\n')}
     }
 
     const params = new URLSearchParams({
-      path: '/calendar/action/compose',
+      rru: 'addevent',
       subject: topic || 'การประชุม',
       startdt: startDt,
       enddt: endDt,
@@ -282,7 +287,7 @@ ${editedDetails.agenda.map(a => `- ${a}`).join('\n')}
       location: location || '',
     });
 
-    return `https://email.pea.co.th/owa/#${params.toString()}`;
+    return `https://outlook.cloud.microsoft/calendar/0/action/compose?${params.toString()}`;
   };
 
   const downloadIcsFile = (details: MeetingDetails) => {
